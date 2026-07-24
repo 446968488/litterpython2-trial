@@ -1,0 +1,8 @@
+本文件夹用来临时存放你的真实素材，方便整理：
+
+- materials/videos/   放视频 mp4
+- materials/docs/     放文本讲义（doc / pdf / ppt 先手动转成文字）
+- materials/exercises/ 放作业题目（先按《素材整理模板》整理）
+
+整理好后，按《素材整理模板.md》把它们并入 data/course.js 即可。
+（阶段 5 会支持直接拖文件夹自动导入，到时不用手改。）

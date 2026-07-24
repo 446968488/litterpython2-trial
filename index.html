@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>和小光一起学 Python</title>
+<link rel="stylesheet" href="css/style.css?v=20260721s">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">📚 <span id="course-title">和小光一起学 Python</span></div>
+  <div class="progress-wrap">
+    <span id="progress-text">进度 0%</span>
+  </div>
+  <button class="parent-btn" id="parent-btn" title="家长面板">👨‍👩‍👧</button>
+</header>
+
+<!-- 首页：卡片式闯关地图 -->
+<main id="home-view" class="home-view"></main>
+
+<!-- 学习页：视频 + 讲义 + 练习 -->
+<section id="lesson-view" class="lesson-view" style="display:none"></section>
+
+<div class="toast" id="toast"></div>
+
+<!-- 一键向上 / 向下 悬浮按钮 -->
+<div class="scroll-fab" id="scroll-fab">
+  <button class="fab-btn" id="fab-up" title="一键向上（回到顶部）" aria-label="一键向上">↑</button>
+  <button class="fab-btn" id="fab-down" title="一键向下（到底部）" aria-label="一键向下">↓</button>
+</div>
+
+<!-- 家长验证 / 家长面板弹窗 -->
+<div class="modal-mask" id="modal-mask" style="display:none">
+  <div class="modal" id="modal"></div>
+</div>
+
+<script src="data/course.js?v=20260720i"></script>
+<script src="js/cover_icons.js?v=20260721a"></script>
+<script src="data/vocab-words.js?v=20260719m"></script>
+<script src="data/audio.js?v=20260720d"></script>
+<script src="data/talk.js?v=20260720d"></script>
+<script src="data/words.js?v=20260719m"></script>
+<script src="js/vocab.js?v=20260719m"></script>
+<script src="js/figures.js?v=20260719m"></script>
+<script src="js/markdown.js?v=20260719m"></script>
+<script src="vendor/skulpt/skulpt.min.js?v=20260719m"></script>
+<script src="vendor/skulpt/skulpt-stdlib.js?v=20260719m"></script>
+<script src="data/code_practice.js?v=20260720c"></script>
+<script src="libs/jsrsasign.min.js?v=20260720a"></script>
+<script>window.TRIAL_MODE=true;window.TRIAL_CONTENT=['c0l1','c0l2','c0l3'];</script>
+    <script src="js/app.js?v=20260723r1"></script>
+  <div id="trial-upgrade" style="position:fixed;left:12px;right:80px;bottom:24px;background:linear-gradient(135deg,#7c5cff,#4f8cff);color:#fff;padding:12px 16px;border-radius:14px;box-shadow:0 6px 20px rgba(76,80,160,.35);font-size:14px;line-height:1.5;z-index:900;text-align:left;font-family:inherit;">🌟 <b>免费试看版</b>：你已解锁 <b>第0章 思维热身（3 课）</b>。想学完全部 <b>40+ 课</b>（循环·函数·海龟画图·小游戏…）？加老师 <b>QQ：446968488</b> 购买完整版 📩</div>
+</body>
+</html>
