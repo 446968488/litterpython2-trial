@@ -80,6 +80,10 @@
   ];
   function loadStyle() { const v = localStorage.getItem(STYLE_KEY); return STYLES.some((s) => s.id === v) ? v : 'humor2'; }
   function saveStyle(v) { if (STYLES.some((s) => s.id === v)) localStorage.setItem(STYLE_KEY, v); }
+  // 音色（男声/女声）：与「语音风格」正交维度。默认女声(晓晓)，男声=云希。男声需先用 tools/gen_male_voice.py 烤制，缺文件自动回退女声。
+  const VOICE_GENDER = (localStorage.getItem('voice_gender') || 'f');
+  function curMap() { return (VOICE_GENDER === 'm' && window.AUDIO_MAP_MALE) ? window.AUDIO_MAP_MALE : window.AUDIO_MAP; }
+  function setGender(g) { try { localStorage.setItem('voice_gender', g); } catch (e) {} location.reload(); }
   // 资源版本号：与 tools/gen_audio.py 的 BUILD 保持一致；改语音后同步改这里，浏览器自动拉最新，免硬刷新
   const ASSET_V = '20260724d';
   // 风格化语音文件解析：优先 audio/<base>_<style>.mp3，回退 audio/<base>.mp3（如 narrate_gentle→narrate）
@@ -376,6 +380,10 @@
   function clearSpeaking() {
     document.querySelectorAll('.speak-btn.speaking').forEach((b) => b.classList.remove('speaking'));
   }
+  // 背景乐闪避：播放真人语音/朗读时压低 BGM，结束恢复（music_player.js 注入 window.__musicDuck）。缺脚本则空操作。
+  function duckMusic(on) {
+    if (typeof window.__musicDuck === 'function') { try { window.__musicDuck(on); } catch (e) {} }
+  }
   // 本地真人语音队列播放（优先于浏览器 TTS）
   let queueAudio = null;
   let queueTimer = null;
@@ -395,11 +403,13 @@
       const item = arr[i];
       queueAudio = new Audio(item.src);
       queueAudio.onended = () => {
+        duckMusic(false);
         i++;
         const ms = item.pause === 'long' ? 650 : (item.pause === 'short' ? 250 : 140);
         queueTimer = setTimeout(next, ms);
       };
-      queueAudio.onerror = () => { i++; next(); };
+      queueAudio.onerror = () => { duckMusic(false); i++; next(); };
+      duckMusic(true);
       const qp = queueAudio.play();
       if (qp && qp.catch) qp.catch(() => { i++; next(); });
     }
@@ -410,6 +420,7 @@
     if (!s) return s;
     const pick = Array.isArray(s) ? s[Math.floor(Math.random() * s.length)] : s;
     if (pick && pick.src) {
+      if (VOICE_GENDER === 'm') return pick; // 男声只有基础版，不拼风格后缀
       const st = loadStyle();
       const suf = st === 'gentle' ? '' : '_' + st;
       return Object.assign({}, pick, { src: pick.src.replace(/\.mp3$/, suf + '.mp3') });
@@ -425,6 +436,7 @@
     if (activeVoice) { try { activeVoice.pause(); } catch (e) {} activeVoice = null; }
     if ('speechSynthesis' in window) { try { speechSynthesis.cancel(); } catch (e) {} }
     clearSpeaking();
+    duckMusic(false);
   }
   // 暂停一切声音（视频 + 语音），用于「开始一个新的声音」前
   function pauseAllAudio() {
@@ -439,8 +451,10 @@
     if (btn) btn.classList.add('speaking');
     const a = new Audio(src);
     activeVoice = a;
-    a.onended = () => { if (btn) btn.classList.remove('speaking'); if (activeVoice === a) activeVoice = null; };
+    duckMusic(true);
+    a.onended = () => { duckMusic(false); if (btn) btn.classList.remove('speaking'); if (activeVoice === a) activeVoice = null; };
     a.onerror = () => {
+      duckMusic(false);
       if (btn) btn.classList.remove('speaking');
       if (activeVoice === a) activeVoice = null;
       if (fallback && fallback !== src) startVoice(fallback, btn); // 风格文件还没生成好→回退基础版
@@ -464,9 +478,10 @@
     const v = pickZhVoice();
     if (v) u.voice = v;
     u.rate = 0.95; u.pitch = 1.0;
-    u.onend = () => { if (btn) btn.classList.remove('speaking'); };
-    u.onerror = () => { if (btn) btn.classList.remove('speaking'); };
+    u.onend = () => { duckMusic(false); if (btn) btn.classList.remove('speaking'); };
+    u.onerror = () => { duckMusic(false); if (btn) btn.classList.remove('speaking'); };
     if (btn) btn.classList.add('speaking');
+    duckMusic(true);
     speechSynthesis.speak(u);
   }
 
@@ -739,7 +754,7 @@
     const doneCount = Object.keys(exDone).length;
 
     // 真人语音：用预生成的晓晓片段拼接（向导点评部分按家长所选风格切换）
-    const map = window.AUDIO_MAP && window.AUDIO_MAP[les.id];
+    const map = curMap() && curMap()[les.id];
     const learn = window.AUDIO_LEARN;
     if (map && map.takeaway) {
       startQueue([learnSeg(map.takeaway)], btn || null); // 学习成果 = 知识点回顾（口语化，按风格选音）；结尾点评段已移到「第一次提交作业」时播放，平时不播
@@ -1325,8 +1340,8 @@ CQIDAQAB
     const zhChk = m.querySelector('#wb-zh');
     try { if (zhChk) zhChk.checked = localStorage.getItem('wordbank_readexpl') === '1'; } catch (e) {}
     if (zhChk) zhChk.onchange = () => { try { localStorage.setItem('wordbank_readexpl', zhChk.checked ? '1' : '0'); } catch (e) {} };
-    function enSrcOf(w) { if (w.enAudio) { return w.enAudio.indexOf('?') === -1 && w.enAudio.indexOf('audio/') === 0 ? w.enAudio + '?v=' + ASSET_V : w.enAudio; } return 'audio/words/' + String(w.en).toLowerCase() + '_en.mp3?v=' + ASSET_V; }
-    function zhSrcOf(w) { if (w.zhAudio) { return w.zhAudio.indexOf('?') === -1 && w.zhAudio.indexOf('audio/') === 0 ? w.zhAudio + '?v=' + ASSET_V : w.zhAudio; } return 'audio/words/' + String(w.en).toLowerCase() + '_zh.mp3?v=' + ASSET_V; }
+    function enSrcOf(w) { if (w.enAudio) { return w.enAudio.indexOf('?') === -1 && w.enAudio.indexOf('audio/') === 0 ? w.enAudio + '?v=' + ASSET_V : w.enAudio; } return 'audio/' + (VOICE_GENDER === 'm' ? 'words_male/' : 'words/') + String(w.en).toLowerCase() + '_en.mp3?v=' + ASSET_V; }
+    function zhSrcOf(w) { if (w.zhAudio) { return w.zhAudio.indexOf('?') === -1 && w.zhAudio.indexOf('audio/') === 0 ? w.zhAudio + '?v=' + ASSET_V : w.zhAudio; } return 'audio/' + (VOICE_GENDER === 'm' ? 'words_male/' : 'words/') + String(w.en).toLowerCase() + '_zh.mp3?v=' + ASSET_V; }
     // 读完英文后按需读中文（带停顿，避免和英文重叠）
     function afterEn(w, withZh, cb) {
       if (withZh && w.zh) {
@@ -2101,6 +2116,15 @@ CQIDAQAB
           STYLES.map((s) => '<button class="style-opt' + (loadStyle() === s.id ? ' on' : '') + '" data-style="' + s.id + '">' + s.label + '</button>').join('') +
         '</div>' +
       '</div>' +
+      // 语音音色（男声/女声，与语音风格正交）
+      '<div class="pp-section pp-theme-gender">' +
+        '<div class="pp-h"><span class="pp-ico">🔊</span>语音音色</div>' +
+        '<div class="gender-pick">' +
+          '<button class="gender-opt' + (VOICE_GENDER !== 'm' ? ' on' : '') + '" data-gender="f">👩 女声（晓晓）</button>' +
+          '<button class="gender-opt' + (VOICE_GENDER === 'm' ? ' on' : '') + '" data-gender="m">👨 男声（云希）</button>' +
+        '</div>' +
+        '<p class="pp-tip-sm">男声需先用「烤制工具」生成语音，未生成时自动回退女声。</p>' +
+      '</div>' +
       // 课程解锁状态（可折叠）
       '<div class="pp-section pp-theme-unlock">' +
         '<div class="pp-h collapsible" data-sec="unlock">' + chev(ppCollapsed.unlock) + '<span class="pp-ico">' + ICON.unlock + '</span>课程解锁状态</div>' +
@@ -2133,6 +2157,7 @@ CQIDAQAB
     $('#pp-close').onclick = hideModal;
     const ppX = $('#pp-x');
     if (ppX) ppX.onclick = hideModal;
+    document.querySelectorAll('[data-gender]').forEach((b) => { b.onclick = () => setGender(b.dataset.gender); });
     $('#pin-change').onclick = () => {
       const old = $('#pin-old').value, nw = $('#pin-new').value.trim();
       if (old !== loadParentPin()) { toast('当前密码错误'); return; }
@@ -2381,7 +2406,7 @@ CQIDAQAB
     const sl = c.querySelector('#speak-lecture');
     if (sl) sl.onclick = () => {
       if (!currentLesson) return;
-      const map = window.AUDIO_MAP && window.AUDIO_MAP[currentLesson.id];
+      const map = curMap() && curMap()[currentLesson.id];
       if (map && map.lecture && map.lecture.length) {
         if (sl.classList.contains('speaking')) { stopSpeak(); return; }
         startQueue(map.lecture, sl);
@@ -2599,7 +2624,7 @@ CQIDAQAB
           if (ok) { playCorrect(); startVoice(vfile('common/fb_right')); markExerciseDone(idx); }
           else { playWrong(); startVoice(vfile('common/fb_wrong')); }
         } else if (btn.dataset.act === 'speak-q') {
-          const map = window.AUDIO_MAP && window.AUDIO_MAP[currentLesson.id];
+          const map = curMap() && curMap()[currentLesson.id];
           const exAudio = map && map.exercises && map.exercises[idx];
           if (exAudio && exAudio.length) {
             if (btn.classList.contains('speaking')) { stopSpeak(); return; }
