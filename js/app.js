@@ -91,7 +91,11 @@
   // 音色（男声/女声）：与「语音风格」正交维度。默认女声(晓晓)，男声=云希。男声需先用 tools/gen_male_voice.py 烤制，缺文件自动回退女声。
   const VOICE_GENDER = (localStorage.getItem('voice_gender') || 'f');
   function curMap() { return (VOICE_GENDER === 'm' && window.AUDIO_MAP_MALE) ? window.AUDIO_MAP_MALE : window.AUDIO_MAP; }
-  function setGender(g) { try { localStorage.setItem('voice_gender', g); } catch (e) {} location.reload(); }
+  function setGender(g) {
+    try { localStorage.setItem('voice_gender', g); } catch (e) {}
+    if (typeof showParentPanelContent === 'function') showParentPanelContent();
+    toast('已切换为：' + (g === 'm' ? '男声（云希）' : '女声（晓晓）'));
+  }
   // 资源版本号：与 tools/gen_audio.py 的 BUILD 保持一致；改语音后同步改这里，浏览器自动拉最新，免硬刷新
   const ASSET_V = '20260724d';
   // 风格化语音文件解析：优先 audio/<base>_<style>.mp3，回退 audio/<base>.mp3（如 narrate_gentle→narrate）
