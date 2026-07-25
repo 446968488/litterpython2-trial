@@ -76,17 +76,7 @@
     { id: 'humor2', label: '幽默·梗王' },
     { id: 'strict', label: '严厉毒舌' },
   ];
-  // 各风格是否有男声录音：当前男声=云希基础版，仅「亲切低龄」(gentle) 有；梗王/严厉暂无男声。
-  // 选男声时，语音风格选择器只显示本数组内的风格，避免用户选了没男声的风格误以为出 bug。
-  const MALE_STYLE_IDS = ['gentle'];
-  function styleAvailableForGender(id) {
-    return VOICE_GENDER !== 'm' || MALE_STYLE_IDS.indexOf(id) !== -1;
-  }
-  function loadStyle() {
-    const v = localStorage.getItem(STYLE_KEY);
-    if (VOICE_GENDER === 'm') return MALE_STYLE_IDS.indexOf(v) !== -1 ? v : 'gentle';
-    return STYLES.some((s) => s.id === v) ? v : 'humor2';
-  }
+  function loadStyle() { const v = localStorage.getItem(STYLE_KEY); return STYLES.some((s) => s.id === v) ? v : 'humor2'; }
   function saveStyle(v) { if (STYLES.some((s) => s.id === v)) localStorage.setItem(STYLE_KEY, v); }
   // 音色（男声/女声）：与「语音风格」正交维度。默认女声(晓晓)，男声=云希。男声需先用 tools/gen_male_voice.py 烤制，缺文件自动回退女声。
   const VOICE_GENDER = (localStorage.getItem('voice_gender') || 'f');
@@ -2107,7 +2097,7 @@ CQIDAQAB
       '<div class="pp-section pp-theme-style">' +
         '<div class="pp-h"><span class="pp-ico">' + ICON.style + '</span>语音风格</div>' +
         '<div class="style-pick">' +
-          STYLES.filter((s) => styleAvailableForGender(s.id)).map((s) => '<button class="style-opt' + (loadStyle() === s.id ? ' on' : '') + '" data-style="' + s.id + '">' + s.label + '</button>').join('') +
+          STYLES.map((s) => '<button class="style-opt' + (loadStyle() === s.id ? ' on' : '') + '" data-style="' + s.id + '">' + s.label + '</button>').join('') +
         '</div>' +
       '</div>' +
       // 语音音色（男声/女声，与语音风格正交）
@@ -2117,7 +2107,7 @@ CQIDAQAB
           '<button class="gender-opt' + (VOICE_GENDER !== 'm' ? ' on' : '') + '" data-gender="f">👩 女声（晓晓）</button>' +
           '<button class="gender-opt' + (VOICE_GENDER === 'm' ? ' on' : '') + '" data-gender="m">👨 男声（云希）</button>' +
         '</div>' +
-        '<p class="pp-tip-sm">男声（云希）目前仅有「亲切低龄」一档风格音色；选男声时风格自动限定为该档。男声需先用「烤制工具」生成语音，未生成时自动回退女声。</p>' +
+        '<p class="pp-tip-sm">男声需先用「烤制工具」生成语音，未生成时自动回退女声。</p>' +
       '</div>' +
       // 课程解锁状态（可折叠）
       '<div class="pp-section pp-theme-unlock">' +
